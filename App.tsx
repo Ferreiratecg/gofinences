@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler';
+import { StatusBar } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import "intl";
 import "intl/locale-data/jsonp/pt-BR";
@@ -20,8 +21,8 @@ import {
 
 import theme from './src/global/styles/theme';
 
-//import { Dashboard } from './src/screens/Dashboard';
-//import { CategorySelect } from './src/screens/CategorySelect';
+import { Signin } from './src/screens/Signin';
+
 import { AppRoutes } from './src/routes/app.routes';
 
 export default function App() {
@@ -44,7 +45,8 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider theme={theme}>
         <NavigationContainer>
-          <AppRoutes />
+          <StatusBar barStyle="light-content" />
+          <Signin />
         </NavigationContainer>
       </ThemeProvider>
     </GestureHandlerRootView>

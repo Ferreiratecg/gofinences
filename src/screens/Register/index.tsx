@@ -50,6 +50,7 @@ const schema = Yup.object().shape({
         .number()
         .typeError("Informe o valor numérico")
         .positive("Valor não pode ser negativo")
+        .required("Valor é obrigatório"),
 
 })
 

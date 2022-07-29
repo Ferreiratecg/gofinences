@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { ActivityIndicator } from "react-native";
 import { RFValue } from "react-native-responsive-fontsize";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { VictoryPie } from "victory-native";
@@ -23,6 +25,7 @@ import {
   MonthSelectButton,
   MonthSelectIcon,
   Month,
+  LoadContainer,
 
 } from "./styles";
 import theme from "../../global/styles/theme";
@@ -45,20 +48,22 @@ interface CategoryData {
 }
 
 export function Resume() {
+  const [isLoading, setIsLoding] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [totalByCategories, setTotalByCategories] = useState<CategoryData>([]);
 
   const theme = useTheme();
 
   function handleDateChange(action: 'next' | 'prev') {
-    if (action === 'next'){
+    if (action === 'next') {
       setSelectedDate(addMonths(selectedDate, 1));
     } else {
-        setSelectedDate(subMonths(selectedDate, 1));
+      setSelectedDate(subMonths(selectedDate, 1));
     }
   }
   /* função que busca todos od dados da nosso collection */
   async function loadData() {
+    setIsLoding(true);
     /* constante que armazena o nome da nossa colection */
     const dataKey = "@gofinances:transactions"
 
@@ -71,10 +76,10 @@ export function Resume() {
     /* soma por categorias */
     /* filtrando as transações negativa que será demonstrado em um gráfico */
     const expensives = responseFormatted
-      .filter((expensive: TransactionData) => 
-      expensive.type === 'negative' &&
-      new Date(expensive.date).getMonth() === selectedDate.getMonth() &&
-      new Date(expensive.date).getFullYear() === selectedDate.getFullYear()
+      .filter((expensive: TransactionData) =>
+        expensive.type === 'negative' &&
+        new Date(expensive.date).getMonth() === selectedDate.getMonth() &&
+        new Date(expensive.date).getFullYear() === selectedDate.getFullYear()
       );
 
     /* calculando o total p calcular a porcentagem de cada categoria
@@ -135,80 +140,93 @@ export function Resume() {
     /* final estrutura de repetição aninhada */
 
     setTotalByCategories(totalByCategory);
-
     //console.log(totalByCategory)
+
+    setIsLoding(false);
 
   }
 
-  useEffect(() => {
+  /* toda vez que o meu selectedDate mudar disparo useFocusEffect */
+
+  /* reset na interface */
+  useFocusEffect(useCallback(() => {
     loadData();
-  }, [selectedDate])
+  }, [selectedDate]));
 
   return (
     <Container>
+
       <Header>
         <Title>Resumo por categoria</Title>
       </Header>
 
-      {/* listgem das categorias */}
-      <Content
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: 24,
-          paddingBottom: useBottomTabBarHeight(),
-        }}
-      >
-
-        <MonthSelect>
-          <MonthSelectButton onPress={() => handleDateChange('prev')}>
-            <MonthSelectIcon name="chevron-left" />
-          </MonthSelectButton>
-
-          <Month>
-            {format(selectedDate, 'MMMM, yyyy', {locale: ptBR})}
-          </Month>
-
-          <MonthSelectButton onPress={() => handleDateChange('next')}>
-            <MonthSelectIcon name="chevron-right" />
-          </MonthSelectButton>
-
-        </MonthSelect>
-
-
-        {/* gráfico, precisamos passar um data */}
-        <ChartContainer>
-          <VictoryPie
-            data={totalByCategories}
-            /* pega somente as cores da categoria */
-            colorScale={totalByCategories.map(category => category.color)}
-            /* estilização do label(numero da porcentagem) */
-            style={{
-              labels: {
-                fontSize: RFValue(18),
-                fontWeight: 'bold',
-                fill: theme.colors.shape
-              }
-            }}
-            /* trazendo a pocentagem para dentro do gráfico */
-            labelRadius={80}
-            x="percent"
-            y="total"
-          />
-        </ChartContainer>
-
-        {
-          totalByCategories.map(item => (
-            <HistoryCard
-              key={item.key}
-              title={item.name}
-              amount={item.totalFormatted}
-              color={item.color}
+      {
+        isLoading ?
+          <LoadContainer>
+            <ActivityIndicator
+              color={theme.colors.primary}
+              size="large"
             />
-          ))
-        }
-      </Content>
+          </LoadContainer> :
 
-    </Container>
+          <Content Content
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 24,
+              paddingBottom: useBottomTabBarHeight(),
+            }}
+          >
+
+            <MonthSelect>
+              <MonthSelectButton onPress={() => handleDateChange('prev')}>
+                <MonthSelectIcon name="chevron-left" />
+              </MonthSelectButton>
+
+              <Month>
+                {format(selectedDate, 'MMMM, yyyy', { locale: ptBR })}
+              </Month>
+
+              <MonthSelectButton onPress={() => handleDateChange('next')}>
+                <MonthSelectIcon name="chevron-right" />
+              </MonthSelectButton>
+
+            </MonthSelect>
+
+
+            {/* gráfico, precisamos passar um data */}
+            <ChartContainer>
+              <VictoryPie
+                data={totalByCategories}
+                /* pega somente as cores da categoria */
+                colorScale={totalByCategories.map(category => category.color)}
+                /* estilização do label(numero da porcentagem) */
+                style={{
+                  labels: {
+                    fontSize: RFValue(18),
+                    fontWeight: 'bold',
+                    fill: theme.colors.shape
+                  }
+                }}
+                /* trazendo a pocentagem para dentro do gráfico */
+                labelRadius={80}
+                x="percent"
+                y="total"
+              />
+            </ChartContainer>
+
+            {
+              totalByCategories.map(item => (
+                <HistoryCard
+                  key={item.key}
+                  title={item.name}
+                  amount={item.totalFormatted}
+                  color={item.color}
+                />
+              ))
+            }
+          </Content>
+      }
+    </Container >
   )
 
 }
